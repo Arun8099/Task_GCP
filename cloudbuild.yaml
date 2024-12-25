@@ -13,8 +13,6 @@ steps:
     args:
       - '-c'
       - |
-          # Authenticate with Google Cloud
-         # gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
           
           # Set the project
           gcloud config set project $PROJECT_ID
