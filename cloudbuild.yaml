@@ -48,7 +48,7 @@ substitutions:
   _CLUSTER_NAME: 'gke-cluster'        # Replace with your GKE cluster name
   _CLUSTER_ZONE: 'europe-west2-a'        # Replace with your GKE cluster zone
   _CLUSTER_REGION: 'europe-west2'    # Replace with your GKE cluster region
-  _GOOGLE_APPLICATION_CREDENTIALS: '/workspace/credentials.json'  # Path to your service account credentials
+ # _GOOGLE_APPLICATION_CREDENTIALS: '/workspace/credentials.json'  # Path to your service account credentials
 
 # Optionally, you can also set environment variables for cluster info:
 env:
