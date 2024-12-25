@@ -1,11 +1,13 @@
-# cloudbuild.yaml all
 steps:
+  # Step 1: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA', '.']
 
+  # Step 2: Push the Docker image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA']
 
+  # Step 3: Deploy the new version (green) of the application
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -13,12 +15,14 @@ steps:
       - 'deployment/sample-app-green'
       - 'sample-app=gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA'
 
+  # Step 4: Verify the green deployment status
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'rollout'
       - 'status'
       - 'deployment/sample-app-green'
 
+  # Step 5: Switch the service selector to point to the green deployment
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -26,14 +30,28 @@ steps:
       - 'service/sample-app-service'
       - '--selector=app=sample-app-green'
 
+  # Step 6: Delete the old (blue) deployment once the green deployment is successful
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'delete'
       - 'deployment'
       - 'sample-app-blue'
 
-# Specify logs bucket (Cloud Storage bucket for logs)
+# Optionally specify a Cloud Storage bucket for Cloud Build logs (ensure the bucket exists in your GCP project)
 logsBucket: gs://sample-app-app
 
 images:
   - 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA'
+
+# Substitutions for GKE cluster and project configuration
+substitutions:
+  _CLUSTER_NAME: 'gke-cluster'        # Replace with your GKE cluster name
+  _CLUSTER_ZONE: 'europe-west2-a'        # Replace with your GKE cluster zone
+  _CLUSTER_REGION: 'europe-west2'    # Replace with your GKE cluster region
+  _GOOGLE_APPLICATION_CREDENTIALS: '/workspace/credentials.json'  # Path to your service account credentials
+
+# Optionally, you can also set environment variables for cluster info:
+env:
+  - 'CLOUDSDK_COMPUTE_REGION=$_CLUSTER_REGION'
+  - 'CLOUDSDK_COMPUTE_ZONE=$_CLUSTER_ZONE'
+  - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLUSTER_NAME'
