@@ -7,7 +7,22 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA']
 
-  # Step 3: Deploy the new version (green) of the application
+  # Step 3: Authenticate and configure kubectl to interact with the GKE cluster
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+          # Authenticate with Google Cloud
+          gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+          
+          # Set the project
+          gcloud config set project $PROJECT_ID
+          
+          # Configure kubectl to use the GKE cluster
+          gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_ZONE --region $CLUSTER_REGION
+
+  # Step 4: Deploy the new version (green) of the application
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -15,14 +30,14 @@ steps:
       - 'deployment/sample-app-green'
       - 'sample-app=gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA'
 
-  # Step 4: Verify the green deployment status
+  # Step 5: Verify the green deployment status
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'rollout'
       - 'status'
       - 'deployment/sample-app-green'
 
-  # Step 5: Switch the service selector to point to the green deployment
+  # Step 6: Switch the service selector to point to the green deployment
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -30,7 +45,7 @@ steps:
       - 'service/sample-app-service'
       - '--selector=app=sample-app-green'
 
-  # Step 6: Delete the old (blue) deployment once the green deployment is successful
+  # Step 7: Delete the old (blue) deployment once the green deployment is successful
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'delete'
@@ -46,12 +61,6 @@ images:
 # Substitutions for GKE cluster and project configuration
 substitutions:
   _CLUSTER_NAME: 'gke-cluster'        # Replace with your GKE cluster name
-  _CLUSTER_ZONE: 'europe-west2-a'        # Replace with your GKE cluster zone
-  _CLUSTER_REGION: 'europe-west2'    # Replace with your GKE cluster region
+  _CLUSTER_ZONE: 'europe-west2-a'     # Replace with your GKE cluster zone
+  _CLUSTER_REGION: 'europe-west2'     # Replace with your GKE cluster region
  # _GOOGLE_APPLICATION_CREDENTIALS: '/workspace/credentials.json'  # Path to your service account credentials
-
-# Optionally, you can also set environment variables for cluster info:
-env:
-  - 'CLOUDSDK_COMPUTE_REGION=$_CLUSTER_REGION'
-  - 'CLOUDSDK_COMPUTE_ZONE=$_CLUSTER_ZONE'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLUSTER_NAME'
