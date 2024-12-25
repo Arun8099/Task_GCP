@@ -1,14 +1,11 @@
-# cloudbuild.yaml for Blue-Green Deployment
+# cloudbuild.yaml
 steps:
-  # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA', '.']
 
-  # Push the Docker image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA']
 
-  # Deploy to the green environment (update sample-app-green deployment)
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -16,14 +13,12 @@ steps:
       - 'deployment/sample-app-green'
       - 'sample-app=gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA'
 
-  # Verify the green deployment rollout
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'rollout'
       - 'status'
       - 'deployment/sample-app-green'
 
-  # Switch traffic from blue to green
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'set'
@@ -31,12 +26,14 @@ steps:
       - 'service/sample-app-service'
       - '--selector=app=sample-app-green'
 
-  # Clean up old blue deployment if necessary
   - name: 'gcr.io/cloud-builders/kubectl'
     args:
       - 'delete'
       - 'deployment'
       - 'sample-app-blue'
+
+# Specify logs bucket (Cloud Storage bucket for logs)
+logsBucket: gs://sample-app-app
 
 images:
   - 'gcr.io/$PROJECT_ID/sample-app:$COMMIT_SHA'
